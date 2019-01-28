@@ -1,0 +1,213 @@
+$END_OF_STORY = 6
+
+#Generate Barcodes
+Function Barcode-Generate {
+    Param ($barcodedata)
+    $Rand = Get-Random
+    $todaydatetime = (get-date).toString("MMddHHmmss")
+    $Temp = $todaydatetime + $Rand
+    $file = "C:\Temp\Zint\Barcode$Temp.png"
+    if (!(test-path C:\Temp\Zint)) {
+        New-Item -Path C:\Temp\ -name Zint -ItemType Directory
+    }
+    
+    &"C:\Program Files (x86)\Zint\zint.exe" -o $file --notext -d $barcodedata
+
+    Return $file
+
+}
+
+Function Barcode-Cleanup {
+    Remove-Item C:\Temp\Zint\*.png
+}
+
+$Word = New-Object -ComObject Word.Application
+
+$Word.Visible = $True
+
+$Doc = $Word.Documents.Add()
+
+#Document spacing
+#$doc.Styles["Normal"].ParagraphFormat.LineSpacingRule="wdLineSpaceSingle"
+$doc.Styles["Normal"].ParagraphFormat.SpaceAfter = 0
+$doc.Styles["Normal"].ParagraphFormat.SpaceBefore = 0
+
+#document Margins
+$doc.PageSetup.LeftMargin = (0.25*72)
+$doc.PageSetup.RightMargin = (0.31*72)
+$doc.PageSetup.TopMargin = (0.50*72)
+$doc.PageSetup.BottomMargin = (0.32*72)
+
+$Selection = $Word.Selection
+
+#Font
+$Selection.Font.Name = "Lucida Console"
+$Selection.Font.Size = 8
+
+$Range = $Selection.Range
+$Doc.Tables.Add($Range, 10, 3)
+$Table = $Doc.Tables(1)
+
+$inventory = import-csv -Path C:\Users\Toomepuu\Desktop\FalkenburgPCInventory.csv
+[int]$ctr = 0
+
+#formatting the table
+$table.Range.Style = "Table Grid"
+$table.Borders.InsideLineStyle = 0 #make the border lines not visible
+$table.Borders.OutsideLineStyle = 0 #make the border lines not visble
+$table.range.Cells.VerticalAlignment = 1
+$table.Range.Rows.Height = 72
+$table.Range.Rows.Alignment = 1
+$Table.Range.Columns.PreferredWidthType = 3
+$table.Range.Columns.Width = (2.75*72)
+
+#outside loop for 10 rows
+For ($i=1;$i -le 10;$i++) {
+    
+    
+    #inside loop for 3 columns
+    For ($j=1;$j -le 3;$j++) {
+
+        #test if there is data for a label
+        If($ctr -le $inventory.count) {
+            $DName = $inventory[$ctr].Computername
+            $DModel = $inventory[$ctr].Manufacturer + " " + $inventory[$ctr].Model
+            $DSerial = $inventory[$ctr].SerialNumber
+            #Text for the label
+            $LabelText = @" 
+Name: `t$DName
+Model: `t$DModel
+S/N: `t$DSerial
+`t   Property of HCTC
+"@
+            $table.Cell($i,$j).Range.text = $LabelText
+            
+            #Barcode
+            $BarcodeFile = Barcode-Generate $DSerial
+            $Shape = $table.Cell($i,$j).Range.InLineShapes.AddPicture("$BarcodeFile")
+            $Shape.Height = 34
+            $Shape.Width = 180
+            
+            $ctr++
+            
+        } #End of If($ctr -le $inventory.count())    
+        Else {Break}
+    } #End of For (j=0;j -le 3;j++)
+
+    #Exit loop if reach the end of the inventory
+    If(!($ctr -le $inventory.count)) {BREAK}
+    
+} #End of For (i=0;i -le 10;i++) 
+
+$Selection.EndKey($END_OF_STORY) #Move to the next page?
+
+
+####PAGE 2 of LABELS#####
+$Range = $Selection.Range 
+$Doc.Tables.Add($Range, 10, 3)
+$Table = $Doc.Tables(2)
+#formatting the table
+$table.Range.Style = "Table Grid"
+$table.Borders.InsideLineStyle = 0 #make the border lines not visible
+$table.Borders.OutsideLineStyle = 0 #make the border lines not visble
+$table.range.Cells.VerticalAlignment = 1
+$table.Range.Rows.Height = 72
+$table.Range.Rows.Alignment = 1
+$Table.Range.Columns.PreferredWidthType = 3
+$table.Range.Columns.Width = (2.75*72)
+#outside loop for 10 rows
+For ($i=1;$i -le 10;$i++) {
+    
+    #inside loop for 3 columns
+    For ($j=1;$j -le 3;$j++) {
+
+        #test if there is data for a label
+        If($ctr -le $inventory.count) {
+            $DName = $inventory[$ctr].Computername
+            $DModel = $inventory[$ctr].Manufacturer + " " + $inventory[$ctr].Model
+            $DSerial = $inventory[$ctr].SerialNumber
+            #Text for the label
+            $LabelText = @" 
+Name: `t$DName
+Model: `t$DModel
+S/N: `t$DSerial
+`t   Property of HCTC
+"@
+            $table.Cell($i,$j).Range.text = $LabelText
+            
+            #Barcode
+            $BarcodeFile = Barcode-Generate $DSerial
+            $Shape = $table.Cell($i,$j).Range.InLineShapes.AddPicture("$BarcodeFile")
+            $Shape.Height = 34
+            $Shape.Width = 180
+            
+            $ctr++
+            
+        } #End of If($ctr -le $inventory.count())    
+        Else {Break}
+    } #End of For (j=0;j -le 3;j++)
+
+    #Exit loop if reach the end of the inventory
+    If(!($ctr -le $inventory.count)) {BREAK}
+    
+} #End of For (i=0;i -le 10;i++) 
+
+$Selection.EndKey($END_OF_STORY)
+
+####PAGE 3 of LABELS#####
+$Range = $Selection.Range
+$Doc.Tables.Add($Range, 10, 3)
+$Table = $Doc.Tables(3)
+
+#formatting the table
+$table.Range.Style = "Table Grid"
+$table.Borders.InsideLineStyle = 0 #make the border lines not visible
+$table.Borders.OutsideLineStyle = 0 #make the border lines not visble
+$table.range.Cells.VerticalAlignment = 1
+$table.Range.Rows.Height = 72
+$table.Range.Rows.Alignment = 1
+$Table.Range.Columns.PreferredWidthType = 3
+$table.Range.Columns.Width = (2.75*72)
+#outside loop for 10 rows
+For ($i=1;$i -le 10;$i++) {
+    
+    #inside loop for 3 columns
+    For ($j=1;$j -le 3;$j++) {
+
+        #test if there is data for a label
+        If($ctr -le $inventory.count) {
+            $DName = $inventory[$ctr].Computername
+            $DModel = $inventory[$ctr].Manufacturer + " " + $inventory[$ctr].Model
+            $DSerial = $inventory[$ctr].SerialNumber
+            #Text for the label
+            $LabelText = @" 
+Name: `t$DName
+Model: `t$DModel
+S/N: `t$DSerial
+`t   Property of HCTC
+"@
+            $table.Cell($i,$j).Range.text = $LabelText
+            
+            #Barcode
+            $BarcodeFile = Barcode-Generate $DSerial
+            $Shape = $table.Cell($i,$j).Range.InLineShapes.AddPicture("$BarcodeFile")
+            $Shape.Height = 34
+            $Shape.Width = 180
+            
+            $ctr++
+            
+        } #End of If($ctr -le $inventory.count())    
+        Else {Break}
+    } #End of For (j=0;j -le 3;j++)
+
+    #Exit loop if reach the end of the inventory
+    If(!($ctr -le $inventory.count)) {BREAK}
+    
+} #End of For (i=0;i -le 10;i++) 
+
+$Selection.EndKey($END_OF_STORY)
+
+
+Barcode-Cleanup
+
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($word)
